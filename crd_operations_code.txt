@@ -1,0 +1,89 @@
+#Build a file-based key-value data store that supports the basic CRD (create, read, and delete) operations.
+#using python 3.8 (64 bit) and running in Windows 10
+
+
+
+                                                           
+
+import threading                                                        #Python threading allows you to have different parts of your program run concurrently and can simplify your design.
+
+from threading import*
+
+import time                                                             #for timeout value
+
+d1={}                                                                   #d1 --> dictionary to store data   
+
+#create operation - syntax: "create(key_name,value,timeout_value)" or "create(key_name,value)"
+
+def create(key,value,timeout=0):                  
+
+    if key in d1:
+        print("Error: the given key is already exists in the database") 
+    else:
+        if(key.isalpha()):
+            if(len(d1)<=(1020*1024**2) and value<=(16*1024**2)):         #given condition for file size never exceed 1GB and Json object value less than 16KB 
+                if(timeout==0):
+                    l=[value,timeout]
+                else:
+                    l=[value,time.time()+timeout]
+                if(len(key)<=32):
+                                                                         #given condition for input keyname (string) capped at 32 chars
+                    d1[key]=l
+            else:
+                print("Error: Memory limit exceeded")
+        else:
+            print("Error: Invalid key_name ,key_name must contain only alphabets ,no special characters or numbers")
+
+#read operation - syntax: "read(key_name)"
+            
+def read(key):
+    if(key not in d1):
+        print("Error: The given key does not exist in database")
+        print("Enter a valid key")
+    else:
+        a=d1[key]
+        if a[1]!=0:
+            if time.time()<a[1]:
+                                                                        #comparing the expiring time with current time
+                s1=str(key)+":"+str(a[0])
+                                                                        #It return the value in the format of Json Object "key_name:value"
+                return s1
+            else:
+                print("Error: Key is for Time-To-Live has expired",key,end=" ")
+                print("The key will no longer be available for Read or Delete operations")
+                                                                        #But it is stored in database memory not available for CRD because it exceeded the timeout value(secs)
+        else:
+            s1=str(key)+":"+str(a[0])
+            return s1
+
+#delete operation - syntax: "delete(key_name)"
+
+def delete(key):
+    if key not in d1:
+        print("Error: The given key does not exist in database")
+        print("Enter a valid key")
+    else:
+        a=d1[key]
+        if(a[1]!=0):
+            if time.time()<a[1]:
+                                                                        #compare the expiring time with current time
+                del d1[key]
+                                                                        #A Delete operation can be performed by providing the key.
+                print("Key is deleted successfully")
+            else:
+                print("Error: Key is for Time-To-Live has expired",key,end=" ")
+                print("The key will no longer be available for Read or Delete operations")
+                                                                        #But it is stored in database memory not available for CRD because it exceeded the timeout value(secs)
+        else:
+            del d1[key]
+            print("Key is deleted successfully")
+
+
+
+#t1=threading.Thread(target=(create or read or delete),args=("San",50,3600)) #as per the operation
+#t1.start()
+#time.sleep(3)
+#print("Thread_1 executed")
+
+
+
